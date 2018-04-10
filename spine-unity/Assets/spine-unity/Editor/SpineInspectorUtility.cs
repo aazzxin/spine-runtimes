@@ -86,38 +86,13 @@ namespace Spine.Unity.Editor {
 		#region SerializedProperty Helpers
 		public static SerializedProperty FindBaseOrSiblingProperty (this SerializedProperty property, string propertyName) {
 			if (string.IsNullOrEmpty(propertyName)) return null;
-
 			SerializedProperty relativeProperty = property.serializedObject.FindProperty(propertyName); // baseProperty
-
-			// If base property is not found, look for the sibling property.
-			if (relativeProperty == null) { 
+			if (relativeProperty == null) { // If no baseProperty, find sibling property.
+				int nameLength = property.name.Length;
 				string propertyPath = property.propertyPath;
-				int localPathLength = property.name.Length;
-
-				string newPropertyPath = propertyPath.Remove(propertyPath.Length - localPathLength, localPathLength) + propertyName;
-				relativeProperty = property.serializedObject.FindProperty(newPropertyPath);
-
-				// If a direct sibling property was not found, try to find the sibling of the array.
-				if (relativeProperty == null && property.isArray) {
-					int propertyPathLength = propertyPath.Length;
-
-					int dotCount = 0;
-					const int siblingOfListDotCount = 3;
-					for (int i = 1; i < propertyPathLength; i++) {
-						if (propertyPath[propertyPathLength - i] == '.') {
-							dotCount++;
-							if (dotCount >= siblingOfListDotCount) {
-								localPathLength = i - 1;
-								break;
-							}
-						}
-					}
-
-					newPropertyPath = propertyPath.Remove(propertyPath.Length - localPathLength, localPathLength) + propertyName;
-					relativeProperty = property.serializedObject.FindProperty(newPropertyPath);
-				}
+				propertyPath = propertyPath.Remove(propertyPath.Length - nameLength, nameLength) + propertyName;
+				relativeProperty = property.serializedObject.FindProperty(propertyPath);
 			}
-
 			return relativeProperty;
 		}
 		#endregion
@@ -245,9 +220,9 @@ namespace Spine.Unity.Editor {
 		public static bool TargetsUseSameData (SerializedObject so) {
 			if (so.isEditingMultipleObjects) {
 				int n = so.targetObjects.Length;
-				var first = so.targetObjects[0] as IHasSkeletonDataAsset;
+				var first = so.targetObjects[0] as ISkeletonComponent;
 				for (int i = 1; i < n; i++) {
-					var sr = so.targetObjects[i] as IHasSkeletonDataAsset;
+					var sr = so.targetObjects[i] as ISkeletonComponent;
 					if (sr != null && sr.SkeletonDataAsset != first.SkeletonDataAsset)
 						return false;
 				}
