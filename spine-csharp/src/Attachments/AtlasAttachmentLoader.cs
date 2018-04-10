@@ -82,7 +82,7 @@ namespace Spine {
 			return new BoundingBoxAttachment(name);
 		}
 
-		public PathAttachment NewPathAttachment (Skin skin, string name) {
+        public PathAttachment NewPathAttachment (Skin skin, string name) {
 			return new PathAttachment(name);
 		}
 

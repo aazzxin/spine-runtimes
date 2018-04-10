@@ -269,9 +269,13 @@ namespace Spine {
 				if (skin == null) throw new Exception("Skin not found: " + linkedMesh.skin);
 				Attachment parent = skin.GetAttachment(linkedMesh.slotIndex, linkedMesh.parent);
 				if (parent == null) throw new Exception("Parent mesh not found: " + linkedMesh.parent);
-				linkedMesh.mesh.ParentMesh = (MeshAttachment)parent;
-				linkedMesh.mesh.UpdateUVs();
-			}
+                if (linkedMesh.mesh is MeshAttachment)
+                {
+                    MeshAttachment mesh = (MeshAttachment)linkedMesh.mesh;
+                    mesh.ParentMesh = (MeshAttachment)parent;
+                    mesh.UpdateUVs();
+                }
+            }
 			linkedMeshes.Clear();
 
 			// Events.

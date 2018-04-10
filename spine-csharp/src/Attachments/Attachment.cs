@@ -34,7 +34,7 @@ namespace Spine {
 	abstract public class Attachment {
 		public string Name { get; private set; }
 
-		protected Attachment (string name) {
+		public Attachment (String name) {
 			if (name == null) throw new ArgumentNullException("name", "name cannot be null");
 			Name = name;
 		}
@@ -42,9 +42,5 @@ namespace Spine {
 		override public string ToString () {
 			return Name;
 		}
-	}
-
-	public interface IHasRendererObject {
-		object RendererObject { get; }
 	}
 }

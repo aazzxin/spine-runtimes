@@ -120,15 +120,29 @@ namespace Spine {
 			updateCache.Clear();
 			this.updateCacheReset.Clear();
 
-			ExposedList<Bone> bones = this.bones;
-			for (int i = 0, n = bones.Count; i < n; i++)
-				bones.Items[i].sorted = false;
+            ExposedList<IkConstraint> ikConstraints = this.ikConstraints;
+            var transformConstraints = this.transformConstraints;
+            var pathConstraints = this.pathConstraints;
+            int ikCount = IkConstraints.Count, transformCount = transformConstraints.Count, pathCount = pathConstraints.Count;
+            int constraintCount = ikCount + transformCount + pathCount;
 
-			ExposedList<IkConstraint> ikConstraints = this.ikConstraints;
-			var transformConstraints = this.transformConstraints;
-			var pathConstraints = this.pathConstraints;
-			int ikCount = IkConstraints.Count, transformCount = transformConstraints.Count, pathCount = pathConstraints.Count;
-			int constraintCount = ikCount + transformCount + pathCount;
+            ExposedList<Bone> bones = this.bones;
+            //旧版的设置骨骼方式
+            for (int i = 0, n = bones.Count; i < n; i++)
+            {
+                Bone bone = bones.Items[i];
+                updateCache.Add(bone);
+                for (int ii = 0; ii < ikCount; ii++)
+                {
+                    IkConstraint ikConstraint = ikConstraints.Items[ii];
+                    if (bone == ikConstraint.bones.Items[ikConstraint.bones.Count - 1])
+                    {
+                        updateCache.Add(ikConstraint);
+                        break;
+                    }
+                }
+            }
+            
 			//outer:
 			for (int i = 0; i < constraintCount; i++) {
 				for (int ii = 0; ii < ikCount; ii++) {
@@ -138,14 +152,16 @@ namespace Spine {
 						goto continue_outer; //continue outer;
 					}
 				}
-				for (int ii = 0; ii < transformCount; ii++) {
-					TransformConstraint constraint = transformConstraints.Items[ii];
-					if (constraint.data.order == i) {
-						SortTransformConstraint(constraint);
-						goto continue_outer; //continue outer;
-					}
-				}
-				for (int ii = 0; ii < pathCount; ii++) {
+                for (int ii = 0; ii < transformCount; ii++)
+                {
+                    TransformConstraint constraint = transformConstraints.Items[ii];
+                    if (constraint.data.order == i)
+                    {
+                        SortTransformConstraint(constraint);
+                        goto continue_outer; //continue outer;
+                    }
+                }
+                for (int ii = 0; ii < pathCount; ii++) {
 					PathConstraint constraint = pathConstraints.Items[ii];
 					if (constraint.data.order == i) {
 						SortPathConstraint(constraint);
@@ -155,8 +171,9 @@ namespace Spine {
 				continue_outer: {}
 			}
 
-			for (int i = 0, n = bones.Count; i < n; i++)
-				SortBone(bones.Items[i]);
+            //3.6版本运行库使用的设置骨骼方式，这会使一些动画的某些部位异常(无动作)
+			//for (int i = 0, n = bones.Count; i < n; i++)
+			//	SortBone(bones.Items[i]);
 		}
 
 		private void SortIkConstraint (IkConstraint constraint) {
@@ -205,31 +222,36 @@ namespace Spine {
 				constrained.Items[i].sorted = true;
 		}
 
-		private void SortTransformConstraint (TransformConstraint constraint) {
-			SortBone(constraint.target);
+        private void SortTransformConstraint(TransformConstraint constraint)
+        {
+            SortBone(constraint.target);
 
-			var constrained = constraint.bones;
-			int boneCount = constrained.Count;
-			if (constraint.data.local) {
-				for (int i = 0; i < boneCount; i++) {
-					Bone child = constrained.Items[i];
-					SortBone(child.parent);
-					if (!updateCache.Contains(child)) updateCacheReset.Add(child);
-				}
-			} else {
-				for (int i = 0; i < boneCount; i++)
-					SortBone(constrained.Items[i]);
-			}
+            var constrained = constraint.bones;
+            int boneCount = constrained.Count;
+            if (constraint.data.local)
+            {
+                for (int i = 0; i < boneCount; i++)
+                {
+                    Bone child = constrained.Items[i];
+                    SortBone(child.parent);
+                    if (!updateCache.Contains(child)) updateCacheReset.Add(child);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < boneCount; i++)
+                    SortBone(constrained.Items[i]);
+            }
 
-			updateCache.Add(constraint);
+            updateCache.Add(constraint);
 
-			for (int i = 0; i < boneCount; i++)
-				SortReset(constrained.Items[i].children);
-			for (int i = 0; i < boneCount; i++)
-				constrained.Items[i].sorted = true;
-		}
+            for (int i = 0; i < boneCount; i++)
+                SortReset(constrained.Items[i].children);
+            for (int i = 0; i < boneCount; i++)
+                constrained.Items[i].sorted = true;
+        }
 
-		private void SortPathConstraintAttachment (Skin skin, int slotIndex, Bone slotBone) {
+        private void SortPathConstraintAttachment (Skin skin, int slotIndex, Bone slotBone) {
 			foreach (var entry in skin.Attachments)
 				if (entry.Key.slotIndex == slotIndex) SortPathConstraintAttachment(entry.Value, slotBone);
 		}
